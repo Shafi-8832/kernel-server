@@ -1,33 +1,35 @@
-HELP.md
+# --- Java & Maven ---
 target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+*.class
+*.log
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
+# --- IntelliJ IDEA ---
+.idea/
 *.iml
-*.ipr
+out/
+gen/
+.idea_modules/
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
+# --- Operating System ---
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
 
-### VS Code ###
-.vscode/
+# --- Database Exception ---
+# For professional production, we usually ignore .db files.
+# For this specific project transfer, we ensure the database is included.
+# !syncron.db
+
+# --- Miscellaneous ---
+.mtj.tmp/
+*.ctxt
+hs_err_pid*
+replay_pid*
