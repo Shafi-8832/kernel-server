@@ -68,45 +68,42 @@ public class EvaluationController {
     }
 
     // UPDATE EXISTING ASSESSMENT
-    @PutMapping("/api/evaluations/{id}")
-    public ResponseEntity<Map<String, String>> updateEvaluation(@PathVariable String id, @RequestBody Map<String, String> data) {
-        ensureTablesExist();
+    // start change
+    @org.springframework.web.bind.annotation.PutMapping("/{id}")
+    public org.springframework.http.ResponseEntity<String> updateEvaluation(@org.springframework.web.bind.annotation.PathVariable String id, @org.springframework.web.bind.annotation.RequestBody java.util.Map<String, String> payload) {
 
-        // If file is "None", we don't overwrite the existing file path. If it has a path, we update it.
-        boolean updateFile = !data.get("filePath").equals("None");
-        String updateSql = updateFile
-                ? "UPDATE evaluations SET title=?, type=?, target_sections=?, total_marks=?, start_date=?, start_time=?, deadline_date=?, deadline_time=?, description=?, file_path=? WHERE id=?"
-                : "UPDATE evaluations SET title=?, type=?, target_sections=?, total_marks=?, start_date=?, start_time=?, deadline_date=?, deadline_time=?, description=? WHERE id=?";
+        // MAKE SURE file_path=? IS IN THIS SQL STRING!
+        String sql = "UPDATE evaluations SET title=?, target_sections=?, total_marks=?, start_date=?, start_time=?, deadline_date=?, deadline_time=?, description=?, file_path=? WHERE id=?";
 
-        try (Connection conn = DatabaseHandler.connect();
-             PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
+        try (java.sql.Connection conn = com.kernel.kernel_server.utils.DatabaseHandler.connect();
+             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            pstmt.setString(1, data.get("title"));
-            pstmt.setString(2, data.get("type"));
-            pstmt.setString(3, data.get("targetSections"));
-            pstmt.setString(4, data.get("totalMarks"));
-            pstmt.setString(5, data.get("startDate"));
-            pstmt.setString(6, data.get("startTime"));
-            pstmt.setString(7, data.get("deadlineDate"));
-            pstmt.setString(8, data.get("deadlineTime"));
-            pstmt.setString(9, data.get("description"));
+            pstmt.setString(1, payload.get("title"));
+            pstmt.setString(2, payload.get("targetSections"));
+            pstmt.setString(3, payload.get("totalMarks"));
+            pstmt.setString(4, payload.get("startDate"));
+            pstmt.setString(5, payload.get("startTime"));
+            pstmt.setString(6, payload.get("deadlineDate"));
+            pstmt.setString(7, payload.get("deadlineTime"));
+            pstmt.setString(8, payload.get("description"));
 
-            if (updateFile) {
-                pstmt.setString(10, data.get("filePath"));
-                pstmt.setString(11, id);
+            // ADD THIS LINE TO CATCH THE FILE UPDATE
+            pstmt.setString(9, payload.get("filePath") != null ? payload.get("filePath") : "None");
+
+            pstmt.setString(10, id);
+
+            int affected = pstmt.executeUpdate();
+            if (affected > 0) {
+                return org.springframework.http.ResponseEntity.ok("{\"message\": \"Updated successfully\"}");
             } else {
-                pstmt.setString(10, id);
+                return org.springframework.http.ResponseEntity.status(404).body("{\"error\": \"Not found\"}");
             }
-
-            pstmt.executeUpdate();
-            System.out.println("✅ Cloud: Updated Assessment ID: " + id);
-            return ResponseEntity.ok(Map.of("message", "Assessment updated successfully!"));
-
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.internalServerError().build();
+            return org.springframework.http.ResponseEntity.status(500).body("{\"error\": \"Database error\"}");
         }
     }
+// End change
 
     @GetMapping("/api/evaluations/course/{courseCode}")
     public ResponseEntity<java.util.List<Map<String, String>>> getCourseEvaluations(@PathVariable String courseCode) {
