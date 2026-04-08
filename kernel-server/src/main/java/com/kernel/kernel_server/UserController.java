@@ -18,8 +18,7 @@ public class UserController {
     private void ensureProfileColumnsExist() {
         try (Connection conn = DatabaseHandler.connect();
              Statement stmt = conn.createStatement()) {
-            // Safely attempt to add columns if they don't exist
-            String[] columns = {"bio", "contact_no", "github", "linkedin", "fb_link", "room_no", "photo_path"};
+            String[] columns = {"bio", "contact_no", "github", "linkedin", "fb_link", "room_no", "photo_path", "nickname"};
             for (String col : columns) {
                 try { stmt.execute("ALTER TABLE users ADD COLUMN " + col + " TEXT DEFAULT ''"); } catch (Exception ignored) {}
             }
@@ -42,6 +41,7 @@ public class UserController {
                 data.put("fb_link", rs.getString("fb_link"));
                 data.put("room_no", rs.getString("room_no"));
                 data.put("photo_path", rs.getString("photo_path"));
+                data.put("nickname", rs.getString("nickname"));
                 return ResponseEntity.ok(data);
             }
             return ResponseEntity.notFound().build();
@@ -51,7 +51,8 @@ public class UserController {
     @PutMapping("/api/users/{id}/profile")
     public ResponseEntity<Map<String, String>> updateProfile(@PathVariable String id, @RequestBody Map<String, String> data) {
         ensureProfileColumnsExist();
-        String sql = "UPDATE users SET bio=?, contact_no=?, github=?, linkedin=?, fb_link=?, room_no=?, photo_path=? WHERE id=?";
+
+        String sql = "UPDATE users SET bio=?, contact_no=?, github=?, linkedin=?, fb_link=?, room_no=?, photo_path=?, nickname=? WHERE id=?";
         try (Connection conn = DatabaseHandler.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, data.getOrDefault("bio", ""));
@@ -61,7 +62,8 @@ public class UserController {
             pstmt.setString(5, data.getOrDefault("fb_link", ""));
             pstmt.setString(6, data.getOrDefault("room_no", ""));
             pstmt.setString(7, data.getOrDefault("photo_path", ""));
-            pstmt.setString(8, id);
+            pstmt.setString(8, data.getOrDefault("nickname", ""));
+            pstmt.setString(9, id);
             pstmt.executeUpdate();
             return ResponseEntity.ok(Map.of("message", "Profile updated"));
         } catch (Exception e) { return ResponseEntity.internalServerError().build(); }

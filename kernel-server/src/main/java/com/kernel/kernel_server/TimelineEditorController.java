@@ -109,6 +109,23 @@ public class TimelineEditorController {
         }
     }
 
+    @PutMapping("/api/sections/rename")
+    public ResponseEntity<Map<String, String>> renameSection(@RequestBody Map<String, String> data) {
+        ensureTablesExist();
+        String sql = "UPDATE course_sections SET title = ? WHERE section_id = ?";
+        try (Connection conn = DatabaseHandler.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, data.get("title"));
+            pstmt.setString(2, data.get("sectionId"));
+            pstmt.executeUpdate();
+            System.out.println("✅ Cloud: Section renamed to '" + data.get("title") + "'");
+            return ResponseEntity.ok(Map.of("message", "Renamed"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     // KEEP existing createSection and createModule methods below...
     @PostMapping("/api/sections")
     public ResponseEntity<Map<String, String>> createSection(@RequestBody Map<String, Object> data) {
@@ -121,4 +138,6 @@ public class TimelineEditorController {
         // [Keep your existing createModule code here]
         return ResponseEntity.ok(Map.of("message", "Module added successfully"));
     }
+
+
 }
