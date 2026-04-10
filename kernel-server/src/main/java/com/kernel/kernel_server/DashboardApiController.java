@@ -39,21 +39,29 @@ public class DashboardApiController {
     @GetMapping("/api/dashboard/deadlines")
     public ResponseEntity<List<Map<String, String>>> getDashboardDeadlines(@RequestParam String role, @RequestParam String name) {
         List<Map<String, String>> deadlines = new ArrayList<>();
-        // Filter evaluation deadlines strictly by role and assignment
+        String today = java.time.LocalDate.now().toString();
+
+        // JOIN courses to get courseTitle, and only return future/today deadlines
         String sql = "STUDENT".equalsIgnoreCase(role)
-                ? "SELECT * FROM evaluations ORDER BY deadline_date ASC, deadline_time ASC LIMIT 10"
-                : "SELECT e.* FROM evaluations e INNER JOIN course_assignments ca ON REPLACE(e.course_code, ' ', '') = REPLACE(ca.course_code, ' ', '') WHERE ca.teacher_name = ? ORDER BY e.deadline_date ASC, e.deadline_time ASC LIMIT 10";
+                ? "SELECT e.id, e.course_code, e.title, e.type, e.deadline_date, e.deadline_time, c.course_title FROM evaluations e LEFT JOIN courses c ON e.course_code = c.course_code WHERE e.deadline_date >= ? ORDER BY e.deadline_date ASC, e.deadline_time ASC LIMIT 10"
+                : "SELECT e.id, e.course_code, e.title, e.type, e.deadline_date, e.deadline_time, c.course_title FROM evaluations e LEFT JOIN courses c ON e.course_code = c.course_code INNER JOIN course_assignments ca ON REPLACE(e.course_code, ' ', '') = REPLACE(ca.course_code, ' ', '') WHERE ca.teacher_name = ? AND e.deadline_date >= ? ORDER BY e.deadline_date ASC, e.deadline_time ASC LIMIT 10";
 
         try (Connection conn = DatabaseHandler.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            if (!"STUDENT".equalsIgnoreCase(role)) pstmt.setString(1, name);
+            if ("STUDENT".equalsIgnoreCase(role)) {
+                pstmt.setString(1, today);
+            } else {
+                pstmt.setString(1, name);
+                pstmt.setString(2, today);
+            }
 
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
                 Map<String, String> eval = new HashMap<>();
                 eval.put("id", rs.getString("id"));
                 eval.put("courseCode", rs.getString("course_code"));
+                eval.put("courseTitle", rs.getString("course_title") != null ? rs.getString("course_title") : "");
                 eval.put("title", rs.getString("title"));
                 eval.put("type", rs.getString("type"));
                 eval.put("deadlineDate", rs.getString("deadline_date"));
@@ -61,7 +69,10 @@ public class DashboardApiController {
                 deadlines.add(eval);
             }
             return ResponseEntity.ok(deadlines);
-        } catch (Exception e) { return ResponseEntity.internalServerError().build(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
 
