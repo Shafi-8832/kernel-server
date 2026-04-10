@@ -50,7 +50,13 @@ public class DatabaseMigrator implements CommandLineRunner {
         System.out.println("🔄 Seeding Teacher-Course Assignments...");
         try (java.sql.Statement stmt = conn.createStatement()) {
             stmt.execute("CREATE TABLE IF NOT EXISTS course_assignments (course_code TEXT, teacher_name TEXT)");
-            stmt.execute("DELETE FROM course_assignments"); // Refresh table on boot
+
+            // Only seed if the table is empty (preserves admin-made assignments)
+            ResultSet countRs = stmt.executeQuery("SELECT COUNT(*) FROM course_assignments");
+            if (countRs.next() && countRs.getInt(1) > 0) {
+                System.out.println("✅ Course assignments already exist (" + countRs.getInt(1) + " records). Skipping seed.");
+                return;
+            }
         }
 
         // THE ENTERPRISE MAPPING ENGINE

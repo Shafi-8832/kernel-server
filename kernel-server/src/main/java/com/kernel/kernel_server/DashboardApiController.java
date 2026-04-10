@@ -89,4 +89,44 @@ public class DashboardApiController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+
+    @GetMapping("/api/calendar/evaluations")
+    public ResponseEntity<List<Map<String, String>>> getCalendarEvaluations(@RequestParam String role, @RequestParam String name) {
+        List<Map<String, String>> events = new ArrayList<>();
+
+        String sql = "STUDENT".equalsIgnoreCase(role)
+                ? "SELECT e.*, c.course_title FROM evaluations e LEFT JOIN courses c ON e.course_code = c.course_code ORDER BY e.deadline_date ASC"
+                : "SELECT e.*, c.course_title FROM evaluations e LEFT JOIN courses c ON e.course_code = c.course_code INNER JOIN course_assignments ca ON REPLACE(e.course_code, ' ', '') = REPLACE(ca.course_code, ' ', '') WHERE ca.teacher_name = ? ORDER BY e.deadline_date ASC";
+
+        try (Connection conn = DatabaseHandler.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            if (!"STUDENT".equalsIgnoreCase(role)) pstmt.setString(1, name);
+
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                Map<String, String> event = new HashMap<>();
+                event.put("id", rs.getString("id"));
+                event.put("courseCode", rs.getString("course_code"));
+                event.put("courseTitle", rs.getString("course_title") != null ? rs.getString("course_title") : "");
+                event.put("title", rs.getString("title"));
+                event.put("type", rs.getString("type"));
+                event.put("startDate", rs.getString("start_date"));
+                event.put("startTime", rs.getString("start_time"));
+                event.put("deadlineDate", rs.getString("deadline_date"));
+                event.put("deadlineTime", rs.getString("deadline_time"));
+                events.add(event);
+            }
+
+            System.out.println("📅 Calendar: Sent " + events.size() + " events for " + role + " " + name);
+            return ResponseEntity.ok(events);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+
 }
